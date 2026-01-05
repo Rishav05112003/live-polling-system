@@ -8,31 +8,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User (Teacher or Student)
-// We need this to track who is in the room and handle "kicking"
+// 1. USER MODEL
+// Handles both Teachers and Students.
+// 'socketId' helps us manage real-time connections.
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  role      Role     @default(STUDENT) // 'TEACHER' or 'STUDENT'
-  socketId  String?  // To track active connection
+  role      Role     @default(STUDENT) 
+  socketId  String?  // vital for kicking users or private messaging
   createdAt DateTime @default(now())
   
   votes     Vote[]
 }
 
-// The Poll Question
+// 2. POLL MODEL
+// 'startedAt' is the key to Resilience. 
+// If a student reloads, we calc: Time Remaining = Duration - (Now - StartedAt)
 model Poll {
   id          Int       @id @default(autoincrement())
   question    String
-  timer       Int       // Duration in seconds (e.g., 60)
-  status      PollStatus @default(PENDING) // PENDING, ACTIVE, ENDED
+  timer       Int       // Total duration in seconds (e.g., 60)
+  status      PollStatus @default(PENDING)
   createdAt   DateTime  @default(now())
-  startedAt   DateTime? // IMPORTANT: Used to calc remaining time for late joiners [cite: 23]
+  startedAt   DateTime? 
   
   options     Option[]
   votes       Vote[]
 }
 
+// 3. OPTION MODEL
 model Option {
   id        Int      @id @default(autoincrement())
   text      String
@@ -43,6 +47,8 @@ model Option {
   votes     Vote[]
 }
 
+// 4. VOTE MODEL
+// The unique constraint ensures a student can never vote twice for the same poll.
 model Vote {
   id        Int      @id @default(autoincrement())
   userId    Int
@@ -53,7 +59,7 @@ model Vote {
   poll      Poll     @relation(fields: [pollId], references: [id])
   option    Option   @relation(fields: [optionId], references: [id])
 
-  @@unique([userId, pollId]) // CONSTRAINT: One vote per user per poll 
+  @@unique([userId, pollId]) // CONSTRAINT: One vote per user per poll
 }
 
 enum Role {

@@ -5,6 +5,10 @@ npm-shrinkwrap.json
 *.log
 *.gz
 .env
+
+# Prisma generated client
+generated/
+prisma/generated/
 # Yarn
 yarn-error.log
 yarn.lock
@@ -18,3 +22,4 @@ benchmarks/graphs
 
 # ignore additional files using core.excludesFile
 # https://git-scm.com/docs/gitignore
+/generated/prisma

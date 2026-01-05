@@ -1,65 +1,139 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSocket } from "../context/SocketContext";
+
+export default function LandingPage() {
+  const [step, setStep] = useState(1);
+  const [role, setRole] = useState("STUDENT"); 
+  const [name, setName] = useState("");
+  const [roomId, setRoomId] = useState("");
+  
+  const router = useRouter();
+  const socket = useSocket();
+
+  const handleContinue = (e) => {
+    // Prevent default form submission reload
+    if (e) e.preventDefault(); 
+
+    if (step === 1) {
+      setStep(2);
+    } else {
+      // Step 2 Validation
+      if (!name.trim() || !roomId.trim()) {
+        alert("Please fill in all fields");
+        return;
+      }
+      
+      // 1. Join Room
+      if (socket) {
+        socket.emit("join_room", { name, roomId, role });
+      }
+      
+      // 2. Save State
+      localStorage.setItem("u_name", name);
+      localStorage.setItem("u_role", role);
+      localStorage.setItem("u_room", roomId);
+
+      // 3. Go to Room
+      router.push(`/room/${roomId}`);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 font-sans">
+      
+      {/* Header */}
+      <div className="text-center mb-10">
+        <div className="inline-block px-4 py-1 mb-4 rounded-full bg-brand-purple text-white text-xs font-bold uppercase tracking-wider">
+          Intervue Poll
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {step === 1 ? "Welcome to the Live Polling System" : "Let's Get Started"}
+        </h1>
+        <p className="text-gray-500">
+          {step === 1 
+            ? "Please select the role that best describes you" 
+            : `Enter your details to join as a ${role.toLowerCase()}`
+          }
+        </p>
+      </div>
+
+      {/* STEP 1: SELECT ROLE */}
+      {step === 1 && (
+        <div className="flex flex-col md:flex-row gap-6 w-full max-w-3xl">
+          {['STUDENT', 'TEACHER'].map((r) => (
+            <div 
+              key={r}
+              onClick={() => setRole(r)}
+              className={`flex-1 p-8 border-2 rounded-2xl cursor-pointer transition-all ${
+                role === r 
+                  ? "border-brand-purple bg-purple-50 shadow-md" 
+                  : "border-gray-100 hover:border-brand-light"
+              }`}
+            >
+              <h3 className="font-bold text-xl mb-2 capitalize text-gray-900">I'm a {r.toLowerCase()}</h3>
+              <p className="text-sm text-gray-500">
+                {r === 'STUDENT' 
+                  ? "Vote in polls and see live results." 
+                  : "Create rooms, ask questions, and manage students."}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* STEP 2: ENTER DETAILS (FORM) */}
+      {step === 2 && (
+        <form onSubmit={handleContinue} className="w-full max-w-md space-y-5">
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-2">Display Name</label>
+            <input
+              type="text"
+              name="username"
+              required
+              autoComplete="off"
+              className="w-full p-4 border border-gray-300 rounded-lg text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent transition-all"
+              placeholder="Ex: Rahul Bajaj"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-2">
+              {role === 'TEACHER' ? "Create Room ID" : "Join Room ID"}
+            </label>
+            <input
+              type="text"
+              name="roomid"
+              required
+              autoComplete="off"
+              className="w-full p-4 border border-gray-300 rounded-lg text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent transition-all"
+              placeholder="Ex: room-101"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full mt-6 px-10 py-4 bg-brand-purple text-white font-bold rounded-full hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            Continue
+          </button>
+        </form>
+      )}
+
+      {/* Step 1 Button (Outside form) */}
+      {step === 1 && (
+        <button
+          onClick={(e) => handleContinue(e)}
+          className="mt-8 px-16 py-4 bg-brand-purple text-white font-bold rounded-full hover:bg-brand-dark transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+        >
+          Continue
+        </button>
+      )}
     </div>
   );
 }

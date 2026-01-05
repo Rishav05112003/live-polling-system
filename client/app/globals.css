@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+@theme {
+  /* Define your custom colors here */
+  --color-brand-purple: #7765DA;
+  --color-brand-dark: #4F0DCE;
+  --color-brand-light: #5767D0;
+  --color-brand-bg: #F2F2F2;
+  --color-brand-text: #373737;
+  --color-brand-gray: #6E6E6E;
+
+  /* Define font */
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* Rest of your CSS... */
