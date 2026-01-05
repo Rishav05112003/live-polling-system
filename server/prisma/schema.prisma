@@ -1,0 +1,68 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User (Teacher or Student)
+// We need this to track who is in the room and handle "kicking"
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  role      Role     @default(STUDENT) // 'TEACHER' or 'STUDENT'
+  socketId  String?  // To track active connection
+  createdAt DateTime @default(now())
+  
+  votes     Vote[]
+}
+
+// The Poll Question
+model Poll {
+  id          Int       @id @default(autoincrement())
+  question    String
+  timer       Int       // Duration in seconds (e.g., 60)
+  status      PollStatus @default(PENDING) // PENDING, ACTIVE, ENDED
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime? // IMPORTANT: Used to calc remaining time for late joiners [cite: 23]
+  
+  options     Option[]
+  votes       Vote[]
+}
+
+model Option {
+  id        Int      @id @default(autoincrement())
+  text      String
+  isCorrect Boolean  @default(false)
+  pollId    Int
+  poll      Poll     @relation(fields: [pollId], references: [id])
+  
+  votes     Vote[]
+}
+
+model Vote {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  pollId    Int
+  optionId  Int
+  
+  user      User     @relation(fields: [userId], references: [id])
+  poll      Poll     @relation(fields: [pollId], references: [id])
+  option    Option   @relation(fields: [optionId], references: [id])
+
+  @@unique([userId, pollId]) // CONSTRAINT: One vote per user per poll 
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum PollStatus {
+  PENDING
+  ACTIVE
+  ENDED
+}
