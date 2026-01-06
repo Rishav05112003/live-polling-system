@@ -1,28 +1,25 @@
-import { roomPollMap, activePolls } from "../index.js";
+import { activePoll, activeTimeout, GLOBAL_ROOM } from "../index.js";
 
-export async function createPoll(prisma, roomId, question, options, timer) {
+export async function createPoll(prisma, question, options, timer) {
   const poll = await prisma.poll.create({
     data: {
       question,
       timer,
       status: "ACTIVE",
-      roomId,
       startedAt: new Date(),
       options: {
-        create: options.map(o => ({
-          text: o,
-        }))
+        create: options.map(o => ({ text: o }))
       }
     },
     include: { options: true }
   });
 
-  roomPollMap.set(roomId, poll);
+  activePoll.current = poll;
   return poll;
 }
 
-export async function endPoll(prisma, io, roomId) {
-  const poll = roomPollMap.get(roomId);
+export async function endPoll(prisma, io) {
+  const poll = activePoll.current;
   if (!poll) return;
 
   await prisma.poll.update({
@@ -30,9 +27,8 @@ export async function endPoll(prisma, io, roomId) {
     data: { status: "ENDED" }
   });
 
-  clearTimeout(activePolls.get(poll.id));
-  activePolls.delete(poll.id);
+  clearTimeout(activeTimeout.current);
 
-  io.to(roomId).emit("poll_ended");
-  roomPollMap.delete(roomId);
+  io.to(GLOBAL_ROOM).emit("poll_ended");
+  activePoll.current = null;
 }

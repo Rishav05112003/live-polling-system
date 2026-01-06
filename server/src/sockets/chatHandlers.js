@@ -1,6 +1,9 @@
-export default function chatHandlers(io, socket, prisma) {
+import { GLOBAL_ROOM } from "../index.js";
 
-  socket.on("send_message", ({ sender, text, roomId }) => {
-    io.to(roomId).emit("receive_message", { sender, text });
+export default function chatHandlers(io, socket) {
+
+  socket.on("send_message", ({ sender, text }) => {
+    io.to(GLOBAL_ROOM).emit("receive_message", { sender, text });
   });
+
 }

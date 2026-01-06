@@ -1,7 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import userReducer from "./userSlice";
 import pollReducer from "./pollSlice";
-import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers } from "redux";
 import {
@@ -12,6 +11,28 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist";
+import createWebStorage from "redux-persist/lib/storage/createWebStorage";
+
+// ---------- IMPORTANT: FIX FOR NEXT.JS SSR ----------
+const createNoopStorage = () => {
+  return {
+    getItem() {
+      return Promise.resolve(null);
+    },
+    setItem(_key, value) {
+      return Promise.resolve(value);
+    },
+    removeItem() {
+      return Promise.resolve();
+    },
+  };
+};
+
+const storage =
+  typeof window !== "undefined"
+    ? createWebStorage("local")
+    : createNoopStorage();
+// ----------------------------------------------------
 
 const persistConfig = {
   key: "root",
@@ -37,7 +58,7 @@ export const store = configureStore({
           PAUSE,
           PERSIST,
           PURGE,
-          REGISTER
+          REGISTER,
         ],
       },
     }),

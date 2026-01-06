@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateResults, endPoll } from "@/store/pollSlice";
-
 import ChatModal from "./ChatModel";
 
-export default function TeacherView({ socket, roomId }) {
+export default function TeacherView({ socket }) {
   const dispatch = useDispatch();
 
   const [question, setQuestion] = useState("");
@@ -14,6 +13,7 @@ export default function TeacherView({ socket, roomId }) {
     { text: "", isCorrect: false },
     { text: "", isCorrect: false },
   ]);
+
   const [timer, setTimer] = useState(60);
   const [isPollActive, setIsPollActive] = useState(false);
   const [liveResults, setLiveResults] = useState([]);
@@ -23,19 +23,36 @@ export default function TeacherView({ socket, roomId }) {
   useEffect(() => {
     if (!socket) return;
 
+    // LIVE RESULTS
     socket.on("update_results", (results) => {
       dispatch(updateResults(results));
       setLiveResults(results);
     });
 
+    // POLL ENDED
     socket.on("poll_ended", () => {
       setIsPollActive(false);
       dispatch(endPoll());
     });
 
+    // WHEN A NEW POLL IS CREATED
+    socket.on("new_poll", (poll) => {
+      setIsPollActive(true);
+      setQuestion(poll.question);
+    });
+
+    // IF TEACHER REFRESHES — RESTORE POLL VIEW
+    socket.on("sync_poll_state", (state) => {
+      if (!state) return;
+      setIsPollActive(true);
+      setQuestion(state.question);
+    });
+
     return () => {
       socket.off("update_results");
       socket.off("poll_ended");
+      socket.off("new_poll");
+      socket.off("sync_poll_state");
     };
   }, [socket, dispatch]);
 
@@ -58,14 +75,15 @@ export default function TeacherView({ socket, roomId }) {
 
   const handleCreatePoll = () => {
     const validOptions = options.filter((o) => o.text.trim() !== "");
-    if (!question || validOptions.length < 2)
-      return alert("Please add a question and at least 2 options.");
+    if (!question || validOptions.length < 2) {
+      alert("Please add a question and at least 2 options.");
+      return;
+    }
 
     socket.emit("create_poll", {
       question,
       options: validOptions.map((o) => o.text),
       timer,
-      roomId,
     });
 
     setIsPollActive(true);
@@ -81,6 +99,9 @@ export default function TeacherView({ socket, roomId }) {
           <span>✨</span> Intervue Poll
         </div>
 
+        {/* ------------------------------------ */}
+        {/* ---------- CREATE POLL UI ---------- */}
+        {/* ------------------------------------ */}
         {!isPollActive ? (
           <>
             <h1 className="text-3xl font-bold mb-2 text-black">
@@ -132,15 +153,18 @@ export default function TeacherView({ socket, roomId }) {
                       <div className="w-6 h-6 bg-brand-purple text-white flex items-center justify-center rounded-full">
                         {idx + 1}
                       </div>
+
                       <input
                         className="w-full bg-gray-100 p-3 rounded-lg"
                         value={opt.text}
-                        onChange={(e) => handleOptionTextChange(idx, e.target.value)}
+                        onChange={(e) =>
+                          handleOptionTextChange(idx, e.target.value)
+                        }
                       />
                     </div>
 
                     <div className="col-span-4 flex gap-4">
-                      <label>
+                      <label className="flex gap-2 items-center">
                         <input
                           type="radio"
                           checked={opt.isCorrect}
@@ -149,7 +173,7 @@ export default function TeacherView({ socket, roomId }) {
                         Yes
                       </label>
 
-                      <label>
+                      <label className="flex gap-2 items-center">
                         <input
                           type="radio"
                           checked={!opt.isCorrect}
@@ -162,15 +186,19 @@ export default function TeacherView({ socket, roomId }) {
                 ))}
               </div>
 
-              <button onClick={handleAddOption} className="mt-4 text-brand-purple">
+              <button
+                onClick={handleAddOption}
+                className="mt-4 text-brand-purple font-bold"
+              >
                 + Add More Option
               </button>
             </div>
 
-            <div className="fixed bottom-0 w-full p-4 flex justify-end">
+            {/* FIXED FOOTER BUTTON */}
+            <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 p-4 flex justify-end items-center gap-4 z-20">
               <button
                 onClick={handleCreatePoll}
-                className="px-10 py-3 bg-brand-purple text-white rounded-full"
+                className="px-10 py-3 bg-brand-purple text-white rounded-full shadow-lg hover:bg-brand-dark transition"
               >
                 Ask Question
               </button>
@@ -178,6 +206,9 @@ export default function TeacherView({ socket, roomId }) {
           </>
         ) : (
           <>
+            {/* ------------------------------------ */}
+            {/* -------- ACTIVE POLL MODE ---------- */}
+            {/* ------------------------------------ */}
             <h3 className="font-bold text-xl mb-4">{question}</h3>
 
             <div className="space-y-4">
@@ -213,11 +244,11 @@ export default function TeacherView({ socket, roomId }) {
         )}
       </div>
 
+      {/* CHAT */}
       <ChatModal
         isOpen={showChat}
         onClose={() => setShowChat(false)}
         socket={socket}
-        roomId={roomId}
         role="TEACHER"
       />
     </div>

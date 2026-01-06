@@ -17,6 +17,11 @@ const io = new Server(server, {
 export const activePolls = new Map();  // pollId → timeout
 export const roomPollMap = new Map();  // roomId → poll
 
+export const GLOBAL_ROOM = "GLOBAL_ROOM";
+export const activePoll = { current: null };
+export const activeTimeout = { current: null };
+
+
 io.on("connection", (socket) => {
   console.log("User connected", socket.id);
 

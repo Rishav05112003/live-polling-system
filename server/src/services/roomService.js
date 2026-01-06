@@ -4,9 +4,8 @@ export async function addUser(prisma, name, role, roomId, socketId) {
   });
 }
 
-export async function getRoomMembers(prisma, roomId) {
+export async function getRoomMembers(prisma) {
   return prisma.user.findMany({
-    where: { roomId },
     select: { id: true, name: true, role: true }
   });
 }

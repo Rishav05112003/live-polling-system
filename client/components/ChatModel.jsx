@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 
-export default function ChatModal({ socket, roomId, role, isOpen, onClose }) {
+export default function ChatModal({ socket, role, isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("Chat"); // 'Chat' or 'Participants'
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -41,7 +41,7 @@ export default function ChatModal({ socket, roomId, role, isOpen, onClose }) {
   const sendMessage = (e) => {
     e.preventDefault();
     if (input.trim()) {
-      socket.emit("send_message", { sender: myName, text: input, roomId });
+      socket.emit("send_message", { sender: myName, text: input });
       setInput("");
     }
   };
@@ -49,7 +49,7 @@ export default function ChatModal({ socket, roomId, role, isOpen, onClose }) {
   // 4. Kick User (Teacher Only)
   const kickUser = (userId) => {
     if(confirm("Are you sure you want to remove this user?")) {
-      socket.emit("kick_student", { studentId: userId, roomId });
+      socket.emit("kick_student", { studentId: userId });
     }
   };
 

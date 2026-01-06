@@ -28,8 +28,6 @@ model Poll {
   createdAt DateTime   @default(now())
   startedAt DateTime?
 
-  roomId    String      // <<< ADD THIS
-
   options   Option[]
   votes     Vote[]
 }

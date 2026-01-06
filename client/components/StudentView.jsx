@@ -11,7 +11,7 @@ import {
 
 import ChatModal from "./ChatModel";
 
-export default function StudentView({ socket, roomId }) {
+export default function StudentView({ socket }) {
   const dispatch = useDispatch();
 
   // Redux State
@@ -92,7 +92,6 @@ export default function StudentView({ socket, roomId }) {
     socket.emit("submit_vote", {
       pollId: poll.id,
       optionId: selectedOption.id,
-      roomId,
     });
 
     // UI already switches to RESULTS via update_results event
@@ -244,7 +243,6 @@ export default function StudentView({ socket, roomId }) {
         isOpen={showChat}
         onClose={() => setShowChat(false)}
         socket={socket}
-        roomId={roomId}
         role="STUDENT"
       />
     </div>
