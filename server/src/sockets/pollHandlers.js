@@ -1,77 +1,53 @@
-// src/sockets/roomHandlers.js
-import prisma from '../config/db.js'; // Note the .js extension
+import { createPoll, endPoll } from "../services/pollService.js";
+import { submitVote, hasVoted, calculateResults } from "../services/voteService.js";
+import { roomPollMap, activePolls } from "../index.js";
 
-const registerRoomHandlers = (io, socket) => {
+export default function pollHandlers(io, socket, prisma) {
 
-  // 1. Join Room
-  socket.on('join_room', async ({ name, role, roomId }) => {
-    try {
-      socket.join(roomId);
-      console.log(`User ${name} (${role}) joined room: ${roomId}`);
+  socket.on("create_poll", async ({ question, options, timer, roomId }) => {
+    const poll = await createPoll(prisma, roomId, question, options, timer);
 
-      // Check if user exists, or create new one
-      let user = await prisma.user.findFirst({
-        where: { name, role } 
-      });
+    io.to(roomId).emit("new_poll", {
+      ...poll,
+      options: poll.options,
+      timer
+    });
 
-      if (!user) {
-        user = await prisma.user.create({
-          data: { name, role, socketId: socket.id }
-        });
-      } else {
-        // Update socket ID for reconnection
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { socketId: socket.id }
-        });
-      }
+    const timeout = setTimeout(() => {
+      endPoll(prisma, io, roomId);
+    }, timer * 1000);
 
-      // Send active poll state to the new user (Resilience)
-      const activePoll = await prisma.poll.findFirst({
-        where: { status: 'ACTIVE' },
-        include: { options: true, votes: true }
-      });
-
-      if (activePoll) {
-        const now = new Date();
-        const elapsed = Math.floor((now - new Date(activePoll.startedAt)) / 1000);
-        const remainingTime = activePoll.timer - elapsed;
-
-        if (remainingTime > 0) {
-          socket.emit('sync_poll_state', {
-             ...activePoll,
-             remainingTime
-          });
-        }
-      }
-
-      // Notify room of new member list
-      // Note: In a real app, you should filter by room, but for now we fetch all
-      const members = await prisma.user.findMany(); 
-      io.to(roomId).emit('update_members', members);
-
-    } catch (error) {
-      console.error("Join Error:", error);
-    }
+    activePolls.set(poll.id, timeout);
   });
 
-  // 2. Kick Member
-  socket.on('kick_student', async ({ studentId, roomId }) => {
-    try {
-      const student = await prisma.user.findUnique({ where: { id: studentId } });
-      if (student && student.socketId) {
-        io.to(student.socketId).emit('kicked'); 
-        io.sockets.sockets.get(student.socketId)?.disconnect(true);
 
-        await prisma.user.delete({ where: { id: studentId } });
-        
-        const members = await prisma.user.findMany();
-        io.to(roomId).emit('update_members', members);
-      }
-    } catch (error) {
-      console.error("Kick Error:", error);
-    }
+  socket.on("submit_vote", async ({ pollId, optionId, roomId }) => {
+    const user = await prisma.user.findFirst({
+      where: { socketId: socket.id }
+    });
+
+    if (!user) return;
+
+    const already = await hasVoted(prisma, pollId, user.id);
+    if (already) return;
+
+    await submitVote(prisma, pollId, user.id, optionId);
+
+    const results = await calculateResults(prisma, pollId);
+    io.to(roomId).emit("update_results", results);
   });
-};
 
-export default registerRoomHandlers;
+
+  socket.on("sync_state", async ({ roomId }) => {
+    const poll = roomPollMap.get(roomId);
+    if (!poll) return;
+
+    const elapsed = (Date.now() - new Date(poll.startedAt)) / 1000;
+    const remaining = poll.timer - Math.floor(elapsed);
+
+    io.to(socket.id).emit("sync_poll_state", {
+      ...poll,
+      remainingTime: remaining > 0 ? remaining : 0
+    });
+  });
+}

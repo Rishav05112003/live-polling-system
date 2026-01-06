@@ -14,14 +14,17 @@
   "description": "",
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "5.17.0",
+    "@prisma/client": "^5.22.0",
+    "@reduxjs/toolkit": "^2.11.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.11",
-    "prisma": "5.17.0"
+    "prisma": "^5.22.0"
   }
 }
