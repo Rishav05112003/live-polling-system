@@ -1,40 +1,55 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const initialState = {
+  poll: null,
+  viewState: "WAITING", // WAITING | VOTING | RESULTS | KICKED
+  timer: 0,
+  liveResults: [],
+  hasSubmitted: false,
+};
+
 const pollSlice = createSlice({
   name: "poll",
-  initialState: {
-    poll: null,
-    liveResults: [],
-    viewState: "WAITING",
-    timer: 0
-  },
+  initialState,
   reducers: {
-    setActivePoll(state, action) {
+    setActivePoll: (state, action) => {
       state.poll = action.payload.poll;
       state.timer = action.payload.timer;
       state.viewState = "VOTING";
       state.liveResults = [];
+      state.hasSubmitted = false;
     },
-    updateResults(state, action) {
+
+    setTimer: (state, action) => {
+      state.timer = action.payload;
+    },
+
+    updateResults: (state, action) => {
       state.liveResults = action.payload;
       state.viewState = "RESULTS";
     },
-    setTimer(state, action) {
-      state.timer = action.payload;
+
+    markSubmitted: (state) => {
+      state.hasSubmitted = true;
+      state.viewState = "RESULTS";
     },
-    endPoll(state) {
+
+    endPoll: (state) => {
       state.poll = null;
       state.viewState = "WAITING";
+      state.timer = 0;
       state.liveResults = [];
-    }
-  }
+      state.hasSubmitted = false;
+    },
+  },
 });
 
-export const { 
+export const {
   setActivePoll,
   updateResults,
   setTimer,
-  endPoll
+  endPoll,
+  markSubmitted,
 } = pollSlice.actions;
 
 export default pollSlice.reducer;

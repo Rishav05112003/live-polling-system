@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "../context/SocketContext";
 import { useSelector, useDispatch } from "react-redux";
@@ -17,52 +17,61 @@ export default function LandingPage() {
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
+  // Reconnect & Sync if redux already has user
+  useEffect(() => {
+    if (!socket) return;
+    if (!user.joined) return;
+
+    socket.emit("join_room", {
+      name: user.name,
+      role: user.role
+    });
+
+    socket.emit("sync_state");
+  }, [socket, user.joined]);
+
   const handleContinue = (e) => {
     e?.preventDefault();
 
-    // STEP 1 → choose role
     if (step === 1) {
       setStep(2);
       return;
     }
 
-    // STEP 2 → validate name
     if (!name.trim()) {
       alert("Please enter your name");
       return;
     }
 
-    // 1️⃣ Save to Redux
+    // Save to Redux
     dispatch(
       setUser({
         name,
-        role,
+        role
       })
     );
 
-    // 2️⃣ Join Global Room
+    // Join Global Room
     if (socket) {
       socket.emit("join_room", { name, role });
     }
 
-    // 3️⃣ Navigate
     router.push("/room");
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 font-sans">
+
       {/* Header */}
       <div className="text-center mb-10">
         <div className="inline-block px-4 py-1 mb-4 rounded-full bg-brand-purple text-white text-xs font-bold uppercase tracking-wider">
           Intervue Poll
         </div>
-
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           {step === 1
             ? "Welcome to the Live Polling System"
             : "Let's Get Started"}
         </h1>
-
         <p className="text-gray-500">
           {step === 1
             ? "Please select the role that best describes you"
@@ -70,7 +79,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* STEP 1: ROLE SELECTION */}
+      {/* STEP 1 — Role Select */}
       {step === 1 && (
         <div className="flex flex-col md:flex-row gap-6 w-full max-w-3xl">
           {["STUDENT", "TEACHER"].map((r) => (
@@ -89,29 +98,30 @@ export default function LandingPage() {
               <p className="text-sm text-gray-500">
                 {r === "STUDENT"
                   ? "Vote in polls and see live results."
-                  : "Create rooms, ask questions, and manage students."}
+                  : "Create polls and manage students."}
               </p>
             </div>
           ))}
         </div>
       )}
 
-      {/* STEP 2: ENTER NAME */}
+      {/* STEP 2 — Enter Name */}
       {step === 2 && (
         <form onSubmit={handleContinue} className="w-full max-w-md space-y-5">
-          <label className="block text-sm font-bold text-gray-900 mb-2">
-            Display Name
-          </label>
-
-          <input
-            type="text"
-            required
-            autoComplete="off"
-            className="w-full p-4 border border-gray-300 rounded-lg text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple transition-all"
-            placeholder="Ex: Rahul Bajaj"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-2">
+              Display Name
+            </label>
+            <input
+              type="text"
+              required
+              autoComplete="off"
+              className="w-full p-4 border border-gray-300 rounded-lg text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple"
+              placeholder="Ex: Rahul Bajaj"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
 
           <button
             type="submit"
@@ -122,7 +132,7 @@ export default function LandingPage() {
         </form>
       )}
 
-      {/* Continue Button for Step 1 */}
+      {/* STEP 1 Continue Button */}
       {step === 1 && (
         <button
           onClick={handleContinue}

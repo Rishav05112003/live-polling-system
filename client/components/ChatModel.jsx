@@ -125,7 +125,7 @@ export default function ChatModal({ socket, role, isOpen, onClose }) {
               <div key={user.id} className="flex justify-between items-center bg-white p-3 mb-2 rounded-lg border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${user.role === 'TEACHER' ? 'bg-brand-purple' : 'bg-green-400'}`} />
-                  <span className="text-sm font-medium text-gray-700 truncate max-w-[120px]">{user.name}</span>
+                  <span className="text-sm font-medium text-gray-700 truncate max-w-30">{user.name}</span>
                 </div>
                 
                 {/* Kick Button (Only for Teachers, and cannot kick self) */}

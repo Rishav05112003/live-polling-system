@@ -238,13 +238,19 @@ export default function TeacherView({ socket }) {
 
             <button
               onClick={() => setIsPollActive(false)}
-              className="mt-6 px-6 py-2 border border-brand-purple rounded-full"
+              className="mt-6 px-6 py-2 font-bold border text-white border-brand-purple bg-brand-purple rounded-full"
             >
-              End Poll & Ask New
+              + Ask a new question
             </button>
           </>
         )}
       </div>  
+      <button
+        onClick={() => setShowChat(!showChat)}
+        className="fixed bottom-20 right-6 w-14 h-14 bg-brand-purple text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-dark transition-transform hover:scale-110 z-50"
+      >
+        💬
+      </button>
       {/* CHAT */}
       <ChatModal
         isOpen={showChat}

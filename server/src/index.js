@@ -7,6 +7,7 @@ import pollHandlers from "./sockets/pollHandlers.js";
 import chatHandlers from "./sockets/chatHandlers.js";
 import { getRoomMembers } from "./services/roomService.js";
 
+
 const prisma = new PrismaClient();
 const app = express();
 
@@ -41,5 +42,6 @@ io.on("connection", (socket) => {
 });
 
 app.get("/", (req, res) => res.send("Polling System Running"));
+
 
 server.listen(5000, () => console.log("Server running on 5000"));
