@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import roomHandlers from "./sockets/roomHandlers.js";
 import pollHandlers from "./sockets/pollHandlers.js";
 import chatHandlers from "./sockets/chatHandlers.js";
+import { getRoomMembers } from "./services/roomService.js";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -30,11 +31,12 @@ io.on("connection", (socket) => {
   chatHandlers(io, socket, prisma);
 
   socket.on("disconnect", async () => {
-    try {
-      await prisma.user.deleteMany({
-        where: { socketId: socket.id }
-      });
-    } catch {}
+    await prisma.user.deleteMany({
+      where: { socketId: socket.id }
+    });
+
+    const members = await getRoomMembers(prisma);
+    io.to("GLOBAL_ROOM").emit("update_members", members);
   });
 });
 

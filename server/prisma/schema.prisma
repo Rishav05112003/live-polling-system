@@ -13,7 +13,7 @@ model User {
   id        Int      @id @default(autoincrement())
   name      String
   role      Role     @default(STUDENT)
-  socketId  String?  
+  socketId  String?  @unique
   roomId    String   // <--- ADDED: To separate classes
   createdAt DateTime @default(now())
    

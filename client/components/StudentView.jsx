@@ -22,6 +22,9 @@ export default function StudentView({ socket }) {
   const [selectedOption, setSelectedOption] = useState(null);
   const [showChat, setShowChat] = useState(false);
 
+  // NEW — local kicked flag
+  const [isKicked, setIsKicked] = useState(false);
+
   // ---------------- LISTENERS ----------------
   useEffect(() => {
     if (!socket) return;
@@ -35,6 +38,7 @@ export default function StudentView({ socket }) {
         })
       );
       setSelectedOption(null);
+      setShowChat(true);
     });
 
     // Sync State
@@ -50,7 +54,7 @@ export default function StudentView({ socket }) {
     // Poll Ended
     socket.on("poll_ended", () => {
       dispatch(endPoll());
-      alert("Poll ended!");
+      setShowChat(false);
     });
 
     // Live Results
@@ -58,11 +62,12 @@ export default function StudentView({ socket }) {
       dispatch(updateResults(results));
     });
 
-    // Kicked
+    // 🚨 Kicked Handler
     socket.on("kicked", () => {
       dispatch(endPoll());
+      setShowChat(false);
+      setIsKicked(true);
       socket.disconnect();
-      alert("You were removed from the room.");
     });
 
     return () => {
@@ -93,23 +98,25 @@ export default function StudentView({ socket }) {
       pollId: poll.id,
       optionId: selectedOption.id,
     });
-
-    // UI already switches to RESULTS via update_results event
   };
 
   // ---------------- UI ----------------
 
-  if (viewState === "KICKED") {
+  // 🚨 FINAL: KICKED UI
+  if (isKicked) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 text-center">
         <div className="inline-block px-3 py-1 mb-6 rounded-full bg-brand-purple text-white text-[10px] font-bold uppercase tracking-wider">
           Intervue Poll
         </div>
+
         <h1 className="text-3xl font-bold text-black mb-2">
           You've been Kicked out !
         </h1>
+
         <p className="text-gray-400 max-w-md">
           Looks like the teacher had removed you from the poll system.
+          Please try again sometime.
         </p>
       </div>
     );
@@ -117,6 +124,7 @@ export default function StudentView({ socket }) {
 
   return (
     <div className="min-h-screen bg-white font-sans text-brand-text relative p-6 flex flex-col items-center">
+
       {/* WAITING */}
       {viewState === "WAITING" && (
         <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -133,6 +141,7 @@ export default function StudentView({ socket }) {
       {/* VOTING + RESULTS */}
       {(viewState === "VOTING" || viewState === "RESULTS") && poll && (
         <div className="w-full max-w-3xl mt-10">
+
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-xl text-black">Question 1</h3>
@@ -149,7 +158,7 @@ export default function StudentView({ socket }) {
           {/* Poll Body */}
           <div className="border border-gray-200 border-t-0 rounded-b-lg p-6 space-y-4 shadow-sm bg-white">
 
-            {/* Voting Options */}
+            {/* Voting */}
             {viewState === "VOTING" &&
               poll.options.map((opt, index) => (
                 <button
@@ -190,6 +199,7 @@ export default function StudentView({ socket }) {
                       className="absolute left-0 top-0 h-full bg-brand-purple w-1.5"
                       style={{ width: `${res.percentage}%` }}
                     />
+
                     <div className="flex justify-between w-full relative z-10 items-center">
                       <div className="flex items-center gap-4">
                         <span className="w-8 h-8 rounded-full bg-brand-purple text-white flex items-center justify-center font-bold">
@@ -231,7 +241,7 @@ export default function StudentView({ socket }) {
         </div>
       )}
 
-      {/* Chat */}
+      {/* Chat Button */}
       <button
         onClick={() => setShowChat(!showChat)}
         className="fixed bottom-6 right-6 w-14 h-14 bg-brand-purple text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-dark transition-transform hover:scale-110 z-50"
@@ -239,6 +249,7 @@ export default function StudentView({ socket }) {
         💬
       </button>
 
+      {/* Chat Modal */}
       <ChatModal
         isOpen={showChat}
         onClose={() => setShowChat(false)}

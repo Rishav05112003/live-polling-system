@@ -1,8 +1,11 @@
 export async function addUser(prisma, name, role, roomId, socketId) {
-  return prisma.user.create({
-    data: { name, role, roomId, socketId }
+  return prisma.user.upsert({
+    where: { socketId },
+    update: { name, role, roomId },
+    create: { name, role, roomId, socketId }
   });
 }
+
 
 export async function getRoomMembers(prisma) {
   return prisma.user.findMany({

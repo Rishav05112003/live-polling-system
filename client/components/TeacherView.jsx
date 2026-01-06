@@ -33,12 +33,14 @@ export default function TeacherView({ socket }) {
     socket.on("poll_ended", () => {
       setIsPollActive(false);
       dispatch(endPoll());
+      setShowChat(false);
     });
 
     // WHEN A NEW POLL IS CREATED
     socket.on("new_poll", (poll) => {
       setIsPollActive(true);
       setQuestion(poll.question);
+      setShowChat(true);     
     });
 
     // IF TEACHER REFRESHES — RESTORE POLL VIEW
@@ -242,8 +244,7 @@ export default function TeacherView({ socket }) {
             </button>
           </>
         )}
-      </div>
-
+      </div>  
       {/* CHAT */}
       <ChatModal
         isOpen={showChat}
